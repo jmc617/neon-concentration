@@ -1,0 +1,16 @@
+{
+  "name": "concentration",
+  "version": "1.0.0",
+  "description": "card game built using Phaser.js",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "type": "module",
+  "author": "Jessica Clay",
+  "license": "ISC",
+  "dependencies": {
+    "http-server": "^0.12.3",
+    "phaser": "^3.55.2"
+  }
+}
