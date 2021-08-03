@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Concentration</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.15.1/dist/phaser-arcade-physics.min.js"></script>
+</head>
+<body>
+
+    <script>
+
+
+        class Game extends Phaser.Scene {
+            constructor() {
+                super({
+                    key: 'Game'
+                });
+            }
+
+            preload() {
+                //load game cards and the json with card info
+                this.load.atlas('cards', 'src/assets/cards.png', 'src/assets/cards.json');
+
+            }
+
+            create() {
+                //  Create an array of shuffled cards with attached values minus the joker and back of the card sprite
+                const frames = this.textures.get('cards').getFrameNames()
+                const faceupFrames = frames.filter(frame => frame !== 'back' && frame !== 'joker')
+                // console.log(frames)
+                // console.log(faceupFrames)
+                Phaser.Actions.Shuffle(faceupFrames);
+                // console.log(faceupFrames)
+                
+                //start point for cards on screen
+                let x = 100;
+                let y = 100;
+                let column = 1;
+                //array of selected cards
+                let selections = [];
+                let score = 0;
+
+                let scoreTextstr = `Find all 26 pairs in 10 minutes to win!\nScore: ${score}`;
+                let scoreText = this.add.text(725, 475, [scoreTextstr]).setFontSize(18).setFontFamily('Trebuchet MS').setColor('#00ffff')
+                
+                let timerTextStr ='Time Left: 10:00';
+                let timerText = this.add.text(725, 525, [timerTextStr]).setFontSize(18).setFontFamily('Trebuchet MS').setColor('#00ffff')
+
+                let firstCard = true;
+
+                //add cards to the page that are tinted to hide values
+                for (var i = 0; i < 52; i++)
+                {   
+                    //if we're on the first 11 columns                   
+                    if (column < 12) {
+                        //add card and set coord for next card
+                        this.add.image(x, y, 'cards', faceupFrames[i]).setScale(.5).setTintFill(0x00076f, 0x44008b, 0x9f45b0, 0xe54ed0).setInteractive();
+                        x += 80;
+                        column++;
+
+                    } else {
+                        //start new row
+                        x = 100;
+                        y += 100;
+                        column = 1;
+                        //add card
+                        this.add.image(x, y, 'cards', faceupFrames[i]).setScale(.5).setTintFill(0x00076f, 0x44008b, 0x9f45b0, 0xe54ed0).setInteractive();
+                        //set coords for next card
+                        x += 80;
+                        column++;
+                    }           
+                }
+                //when you click a card...
+                this.input.on('gameobjectdown', function (pointer, gameObject) {
+                    //end game when time is up
+                    function endGame () {
+                        alert(`Time is up! Final Score: ${score}\n Click to play again!`)
+                        location.reload();
+                    }
+                    //if it's the first card start the timer
+                    if (firstCard) {
+                        firstCard = false;
+                        let timeLeft = 600;
+                        let minutes;
+                        let seconds;
+                        
+                        const timer = setInterval(function(){
+                            function str_pad_left(string,pad,length) {
+                                return (new Array(length+1).join(pad)+string).slice(-length);
+                            }
+
+                            if(timeLeft <= 0) {
+                                clearInterval(timer)
+                                endGame();
+                            }
+                            // console.log(timerTextStr);
+                            minutes = Math.floor(timeLeft / 60);
+                            seconds  = timeLeft - minutes * 60;
+                            timerTextStr = `Time Left: ${str_pad_left(minutes,'0',2)}:${str_pad_left(seconds,'0',2)}`;
+                            timerText.setText(timerTextStr);
+                            timeLeft--
+                            // console.log(timeLeft);
+                        }, 1000)
+                    }
+            
+                    //if no other cards have been chosen
+                    if ( selections.length === 0 ) {
+                        //add GameObject to selections array
+                        selections.push(gameObject)
+                        //remove tint to reveal card
+                        gameObject.setTint();
+                    
+                        // console.log(gameObject.frame.name);
+                        // console.log(selections);
+
+                        
+                    } else if ( selections.length === 1 ) {
+                        const cardName = gameObject.frame.name
+                    //add GameObject to selections array
+                    selections.push(gameObject)
+                    //remove tint to reveal card
+                    gameObject.setTint(); 
+                    //console.log(selections);
+
+                    //set cards to disappear and add to make no longer interactive
+                        function removeCard (targetCard) {
+                            console.log(targetCard);                    
+                            setTimeout(function () {
+                                targetCard.destroy();
+                            }, 1000);
+                        }
+
+                        //procedure for when card matches
+                        function matchProcedure () {
+                            score++;
+                            scoreText.setText(`Find all 26 pairs in 5 minutes to win!\nScore: ${score}`);
+                            console.log(score);
+                            selections.forEach(e => {
+                                removeCard(e);
+                            });
+                            selections = [];
+                            //if score is max possible, 26, then end game
+                            //elapsed time given to player
+                            //future: elapsed time for leaderboard, multiplayer with first finished wins
+                            if (score === 26) {
+                                // console.log('GAME OVER');
+                                //add elapsed time later
+                                alert('You won!');
+                                //new Game-add button to start new game
+                                location.reload();
+                            }   
+                        }
+                    
+                        //if not a match turn cards back over after 5 seconds per rules, empty pair array
+                        function notAMatchProcedure () {
+                            selections.forEach(e => {
+                                setTimeout(function () {
+                                    e.setTintFill(0x00076f, 0x44008b, 0x9f45b0, 0xe54ed0)
+                                }, 5000);
+                            });
+                            selections = [];
+                        }
+
+                    
+
+                    //    check if the card ranks match 
+                    //         if they match then add to the score and make them disappear
+                    //         if they don't match re-tint the cards after a delay
+                    //move into helper file later
+                        const cardOne = selections[0].frame.name
+                        const cardTwo = selections[1].frame.name
+
+                        if (cardOne.includes('Ace')) {
+                            if (cardTwo.includes('Ace')) {
+                                matchProcedure()
+
+                            } else {
+                                notAMatchProcedure();
+                            }
+
+                        } else if (cardOne.includes('2')) {
+                            if (cardTwo.includes('2')) {
+                                matchProcedure()
+                            } else {
+                                notAMatchProcedure();
+                            }
+
+                        } else if (cardOne.includes('3')) {
+                            if (cardTwo.includes('3')) {
+                                matchProcedure()
+                            } else {
+                                notAMatchProcedure();
+                            }
+
+                        } else if (cardOne.includes('4')) {
+                            if (cardTwo.includes('4')) {
+                                matchProcedure()
+                            } else {
+                                notAMatchProcedure();
+                            }
+
+                        } else if (cardOne.includes('5')) {
+                            if (cardTwo.includes('5')) {
+                                matchProcedure()
+                            } else {
+                                notAMatchProcedure();
+                            }
+
+                        } else if (cardOne.includes('6')) {
+                            if (cardTwo.includes('6')) {
+                                matchProcedure()
+                            } else {
+                                notAMatchProcedure();
+                            }
+
+                        } else if (cardOne.includes('7')) {
+                            if (cardTwo.includes('7')) {
+                                matchProcedure()
+                            } else {
+                                notAMatchProcedure();
+                            }
+
+                        } else if (cardOne.includes('8')) {
+                            if (cardTwo.includes('8')) {
+                                matchProcedure()
+                            } else {
+                                notAMatchProcedure();
+                            }
+
+                        } else if (cardOne.includes('9')) {
+                            if (cardTwo.includes('9')) {
+                                matchProcedure()
+                            } else {
+                                notAMatchProcedure();
+                            }
+
+                        } else if (cardOne.includes('10')) {
+                            if (cardTwo.includes('10')) {
+                                matchProcedure()
+                            } else {
+                                notAMatchProcedure();
+                            }
+
+                        } else if (cardOne.includes('King')) {
+                            if (cardTwo.includes('King')) {
+                                matchProcedure()
+                            } else {
+                                notAMatchProcedure();
+                            }
+
+                        } else if (cardOne.includes('Queen')) {
+                            if (cardTwo.includes('Queen')) {
+                                matchProcedure()
+                            } else {
+                                notAMatchProcedure();
+                            }
+
+                        } else if (cardOne.includes('Jack')) {
+                            if (cardTwo.includes('Jack')) {
+                                matchProcedure()
+                            } else {
+                                notAMatchProcedure();
+                            }
+
+                        }
+
+                    } 
+            
+                }, this);
+
+            }
+
+        update() {
+
+        }
+    }
+
+        const config = {
+            type: Phaser.AUTO,
+            parent: "phaser-example",
+            width: 1100,
+            height: 600,
+            scene: [
+                Game
+            ]
+        };
+
+        const game = new Phaser.Game(config);
+    </script>
+
+</body>
+</html>
