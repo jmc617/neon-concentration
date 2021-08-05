@@ -1,6 +1,7 @@
 # Concentration
 
-Concentration is a game created for a [Mintbean](https://mintbean.io/) hackathon in August 2021. It is a timed card matching game. It also includes a landing and contact page styled using Bootstrap.
+Concentration is a game created for a [Mintbean](https://mintbean.io/) hackathon in August 2021. It is a timed card matching game. It also includes a landing and contact page styled using Bootstrap. It can be played [here.](https://jess617-concentration.netlify.app/)
+
 ## Gameplay
 
 ![Gif of gameplay](https://i.imgur.com/Kv5gptZ.gif)
